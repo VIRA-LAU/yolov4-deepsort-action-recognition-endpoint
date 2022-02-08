@@ -123,6 +123,7 @@ def main(_argv):
         else:
             batch_data = tf.constant(image_data)
             pred_bbox = infer(batch_data)
+
             for key, value in pred_bbox.items():
                 boxes = value[:, :, 0:4]
                 pred_conf = value[:, :, 4:]
@@ -150,8 +151,11 @@ def main(_argv):
         original_h, original_w, _ = frame.shape
         bboxes = utils.format_boxes(bboxes, original_h, original_w)
 
+
+
         # store all predictions in one parameter for simplicity when calling functions
         pred_bbox = [bboxes, scores, classes, num_objects]
+
 
         # read in all class names from config
         class_names = utils.read_class_names(cfg.YOLO.CLASSES)
@@ -181,6 +185,9 @@ def main(_argv):
         bboxes = np.delete(bboxes, deleted_indx, axis=0)
         scores = np.delete(scores, deleted_indx, axis=0)
 
+
+
+
         # encode yolo detections and feed to tracker
         features = encoder(frame, bboxes)
         detections = [Detection(bbox, score, class_name, feature) for bbox, score, class_name, feature in zip(bboxes, scores, names, features)]
@@ -206,11 +213,25 @@ def main(_argv):
                 continue 
             bbox = track.to_tlbr()
             class_name = track.get_class()
-            
+
+            print(str(vid.get(cv2.CAP_PROP_POS_MSEC)))
+            print(class_name)
+            print(track.track_id)
+            print(bbox)
+
+            if(vid.get(cv2.CAP_PROP_POS_MSEC) == 300.276):
+                print("its time my friend")
+                cv2.rectangle(frame, (600, 432), (1021, 900), (0, 255, 0), 2)
+
+
+
         # draw bbox on screen
             color = colors[int(track.track_id) % len(colors)]
+
             color = [i * 255 for i in color]
+            print(color)
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
+
             cv2.rectangle(frame, (int(bbox[0]), int(bbox[1]-30)), (int(bbox[0])+(len(class_name)+len(str(track.track_id)))*17, int(bbox[1])), color, -1)
             cv2.putText(frame, class_name + "-" + str(track.track_id),(int(bbox[0]), int(bbox[1]-10)),0, 0.75, (255,255,255),2)
 
@@ -230,7 +251,7 @@ def main(_argv):
         # if output flag is set, save video file
         if FLAGS.output:
             out.write(result)
-        if cv2.waitKey(1) & 0xFF == ord('q'): break
+        if cv2.waitKey(0) & 0xFF == ord('q'): break
     cv2.destroyAllWindows()
 
 if __name__ == '__main__':
