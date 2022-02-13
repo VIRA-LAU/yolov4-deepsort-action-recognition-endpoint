@@ -72,3 +72,5 @@ def getVideo(path):
     result = Process(path, saved_model_loaded);
     result.detect()
     return {"Download From": "http://localhost:8000/getVideo/{}".format(path)}
+
+

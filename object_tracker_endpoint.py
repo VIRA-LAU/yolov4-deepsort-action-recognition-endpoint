@@ -58,6 +58,7 @@ class Process:
         NUM_CLASS = len(utils.read_class_names(cfg.YOLO.CLASSES))
         input_size = 416
         video_path = './video_received/{}'.format(self.path)
+
         infer = self.model.signatures['serving_default']
 
         try:

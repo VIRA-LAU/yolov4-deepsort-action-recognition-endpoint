@@ -56,22 +56,23 @@ def main(_argv):
     config = ConfigProto()
     config.gpu_options.allow_growth = True
     session = InteractiveSession(config=config)
-    STRIDES, ANCHORS, NUM_CLASS, XYSCALE = utils.load_config(FLAGS)
+
+    # STRIDES, ANCHORS, NUM_CLASS, XYSCALE = utils.load_config(FLAGS)
+    STRIDES = np.array(cfg.YOLO.STRIDES)
+    ANCHORS = utils.get_anchors(cfg.YOLO.ANCHORS, FLAGS.tiny)
+    XYSCALE = cfg.YOLO.XYSCALE
+    NUM_CLASS = len(utils.read_class_names(cfg.YOLO.CLASSES))
+
+
     input_size = FLAGS.size
     video_path = FLAGS.video
 
-    # load tflite model if flag is set
-    if FLAGS.framework == 'tflite':
-        interpreter = tf.lite.Interpreter(model_path=FLAGS.weights)
-        interpreter.allocate_tensors()
-        input_details = interpreter.get_input_details()
-        output_details = interpreter.get_output_details()
-        print(input_details)
-        print(output_details)
-    # otherwise load standard tensorflow saved model
-    else:
-        saved_model_loaded = tf.saved_model.load(FLAGS.weights, tags=[tag_constants.SERVING])
-        infer = saved_model_loaded.signatures['serving_default']
+
+
+
+
+    saved_model_loaded = tf.saved_model.load('./checkpoints/yolov4-416', tags=[tag_constants.SERVING])
+    infer = saved_model_loaded.signatures['serving_default']
 
     # begin video capture
     try:
@@ -87,8 +88,10 @@ def main(_argv):
         width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fps = int(vid.get(cv2.CAP_PROP_FPS))
+        print(*FLAGS.output_format)
         codec = cv2.VideoWriter_fourcc(*FLAGS.output_format)
-        out = cv2.VideoWriter(FLAGS.output, codec, fps, (width, height))
+
+        out = cv2.VideoWriter('FLAGS.output', codec, fps, (width, height))
 
     frame_num = 0
     # while video is running
@@ -102,32 +105,25 @@ def main(_argv):
             break
         frame_num +=1
         print('Frame #: ', frame_num)
+
+
         frame_size = frame.shape[:2]
         image_data = cv2.resize(frame, (input_size, input_size))
         image_data = image_data / 255.
         image_data = image_data[np.newaxis, ...].astype(np.float32)
         start_time = time.time()
 
-        # run detections on tflite if flag is set
-        if FLAGS.framework == 'tflite':
-            interpreter.set_tensor(input_details[0]['index'], image_data)
-            interpreter.invoke()
-            pred = [interpreter.get_tensor(output_details[i]['index']) for i in range(len(output_details))]
-            # run detections using yolov3 if flag is set
-            if FLAGS.model == 'yolov3' and FLAGS.tiny == True:
-                boxes, pred_conf = filter_boxes(pred[1], pred[0], score_threshold=0.25,
-                                                input_shape=tf.constant([input_size, input_size]))
-            else:
-                boxes, pred_conf = filter_boxes(pred[0], pred[1], score_threshold=0.25,
-                                                input_shape=tf.constant([input_size, input_size]))
-        else:
-            batch_data = tf.constant(image_data)
-            pred_bbox = infer(batch_data)
 
-            for key, value in pred_bbox.items():
-                boxes = value[:, :, 0:4]
-                pred_conf = value[:, :, 4:]
 
+        batch_data = tf.constant(image_data)
+        pred_bbox = infer(batch_data)
+
+        for key, value in pred_bbox.items():
+            boxes = value[:, :, 0:4]
+            pred_conf = value[:, :, 4:]
+
+        print(FLAGS.iou)
+        print(FLAGS.score)
         boxes, scores, classes, valid_detections = tf.image.combined_non_max_suppression(
             boxes=tf.reshape(boxes, (tf.shape(boxes)[0], -1, 1, 4)),
             scores=tf.reshape(
@@ -245,7 +241,8 @@ def main(_argv):
         result = np.asarray(frame)
         result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
         
-        if not FLAGS.dont_show:
+        if  FLAGS.dont_show:
+            print(FLAGS.dont_show)
             cv2.imshow("Output Video", result)
         
         # if output flag is set, save video file
