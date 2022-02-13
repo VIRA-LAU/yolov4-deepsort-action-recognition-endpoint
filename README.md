@@ -32,7 +32,9 @@ https://developer.nvidia.com/cuda-10.1-download-archive-update2
 
 ## Downloading Official YOLOv4 Pre-trained Weights
 Download pre-trained yolov4.weights file: https://drive.google.com/open?id=1cewMfusmPjYWbrnuJRuKhPMwRe_b9PaT
-Download our custom-basketball-dataset: https://drive.google.com/file/d/1vbW05VxQYuuvRs5GTdn5BGVnInr_o6Ts/view
+
+## Downloading Basketball Model
+Download our custom-basketball-model: https://drive.google.com/file/d/1vbW05VxQYuuvRs5GTdn5BGVnInr_o6Ts/view
 
 
 Copy and paste **yolov4.weights** from your downloads folder into the **'data'** folder of this repository. Make sure to have the exact same name
