@@ -203,6 +203,8 @@ def main(_argv):
         tracker.predict()
         tracker.update(detections)
 
+        print('before tracker', bboxes)
+
         # update tracks
         for track in tracker.tracks:
             if not track.is_confirmed() or track.time_since_update > 1:
@@ -248,7 +250,7 @@ def main(_argv):
         # if output flag is set, save video file
         if FLAGS.output:
             out.write(result)
-        if cv2.waitKey(0) & 0xFF == ord('q'): break
+        if cv2.waitKey(1) & 0xFF == ord('q'): break
     cv2.destroyAllWindows()
 
 if __name__ == '__main__':

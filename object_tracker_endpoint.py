@@ -8,10 +8,8 @@ import tensorflow as tf
 physical_devices = tf.config.experimental.list_physical_devices('GPU')
 if len(physical_devices) > 0:
     tf.config.experimental.set_memory_growth(physical_devices[0], True)
-
+from core.functions import *
 import core.utils as utils
-from core.yolov4 import filter_boxes
-from tensorflow.python.saved_model import tag_constants
 from core.config import cfg
 from PIL import Image
 import cv2
@@ -35,6 +33,7 @@ class Process:
 
 
     def detect(self):
+        frame_img_number =0
         max_cosine_distance = 0.4
         nn_budget = None
         nms_max_overlap = 1.0
@@ -177,6 +176,8 @@ class Process:
             tracker.predict()
             tracker.update(detections)
 
+
+
             # update tracks
             for track in tracker.tracks:
                 if not track.is_confirmed() or track.time_since_update > 1:
@@ -184,14 +185,35 @@ class Process:
                 bbox = track.to_tlbr()
                 class_name = track.get_class()
 
-                print(str(vid.get(cv2.CAP_PROP_POS_MSEC)))
-                print(class_name)
-                print(track.track_id)
-                print(bbox)
+                #print(str(vid.get(cv2.CAP_PROP_POS_MSEC)))
+                #print(class_name)
+                #print(track.track_id)
+                #print(bbox)
 
-                if(vid.get(cv2.CAP_PROP_POS_MSEC) == 300.276):
-                    print("its time my friend")
-                    cv2.rectangle(frame, (600, 432), (1021, 900), (0, 255, 0), 2)
+                if True:
+                    crop_rate = 2  # capture images every so many frames (ex. crop photos every 150 frames)
+                    crop_path = os.path.join(os.getcwd(), 'detections', 'crop', 'trial')
+
+                    try:
+                        os.mkdir(crop_path)
+                    except FileExistsError:
+                        pass
+                    if frame_num % crop_rate == 0:
+                        final_path = os.path.join(crop_path, 'frame_x')
+                        try:
+                            os.mkdir(final_path)
+                        except FileExistsError:
+                            pass
+                        #print(pred_bbox)
+                        frame_img_number =  crop_objects(cv2.cvtColor(frame, cv2.COLOR_BGR2RGB), bbox, track.track_id, class_name, final_path, allowed_classes,frame_img_number)
+                    else:
+                        pass
+
+                #if(vid.get(cv2.CAP_PROP_POS_MSEC) == 300.276):
+                #    print("its time my friend")
+                #    cv2.rectangle(frame, (600, 432), (1021, 900), (0, 255, 0), 2)
+
+
 
 
             # draw bbox on screen
