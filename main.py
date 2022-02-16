@@ -25,7 +25,7 @@ async def root():
     return {"message": "Working Public Endpoint"}
 
 
-@app.get("/models/{model_name}")
+@app.get("/api/v1/public/models/{model_name}")
 async def get_model(model_name: ModelName):
     isDarknetYOLOv4Available = os.path.isfile('./data/yolov4.weights')
     isTensorflowYOLOv4Available = os.path.isfile('./checkpoints/yolov4-416/saved_model.pb')
@@ -39,7 +39,7 @@ async def get_model(model_name: ModelName):
     return {"model_name": model_name, "Darknet YOLOV4 Available": True, "Tensorflow YOLOV4 Available": True, }
 
 
-@app.post("/upload-video")
+@app.post("/api/v1/public/upload-video")
 async def uploadVideo(file: UploadFile = File(...)):
     with open('./video_received/{}'.format(file.filename), 'wb') as buffer:
         shutil.copyfileobj(file.file, buffer)
@@ -47,7 +47,7 @@ async def uploadVideo(file: UploadFile = File(...)):
     return {"filenames": file.filename}
 
 
-@app.get("/getVideo/{path}")
+@app.get("/api/v1/public/getVideo/{path}")
 def getVideo(path):
     file_path = os.path.join("video_processed/{}".format(path))
     if os.path.exists(file_path):
@@ -55,20 +55,20 @@ def getVideo(path):
     return {"error": "File not found!"}
 
 
-@app.get("/processed-videos")
+@app.get("/api/v1/public/processed-videos")
 def getListOfProcessedVideos():
     filenames = next(walk('video_processed'), (None, None, []))[2]
     return {"Processed Videos": filenames}
 
 
-@app.get("/received-videos")
+@app.get("/api/v1/public/received-videos")
 def getListOfReceivedVideos():
     filenames = next(walk('video_received'), (None, None, []))[2]
     return {"Received Videos": filenames}
 
 
-@app.get("/process-video/{path}")
-def getVideo(path):
+@app.get("/api/v1/public/process-video/{path}")
+def ProcessVideo(path):
     result = Process(path, saved_model_loaded);
     result.detect()
     return {"Download From": "http://localhost:8000/getVideo/{}".format(path)}
