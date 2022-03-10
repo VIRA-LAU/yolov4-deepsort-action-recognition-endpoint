@@ -1,4 +1,5 @@
 import os
+import requests
 
 # comment out below line to enable tensorflow logging outputs
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
@@ -25,13 +26,14 @@ from deep_sort.detection import Detection
 from deep_sort.tracker import Tracker
 from tools import generate_detections as gdet
 
-
+api_url = "http://localhost:5065/api/v1/"
 
 class Process:
 
-    def __init__(self, path, model):
+    def __init__(self, path, model, email):
         self.path = path
         self.model = model
+        self.email = email
 
 
     def detect(self):
@@ -138,10 +140,10 @@ class Process:
             allowed_classes = list(class_names.values())
 
             # custom allowed classes (uncomment line below to customize tracker for only people)
-            #allowed_classes = ['person']
+            allowed_classes = ['person', 'madebasketball']
 
 
-            print(pred_bbox)
+            #print(pred_bbox)
 
             # loop through objects and use class index to get class name, allow only classes in allowed_classes list
             names = []
@@ -187,10 +189,29 @@ class Process:
                 bbox = track.to_tlbr()
                 class_name = track.get_class()
 
-                print(str(vid.get(cv2.CAP_PROP_POS_MSEC)))
-                print(class_name)
-                print(track.track_id)
-                print(bbox)
+                #print(str(vid.get(cv2.CAP_PROP_POS_MSEC)))
+                #print(class_name)
+                #print(track.track_id)
+                #print(bbox)
+                xmin, ymin, xmax, ymax = bbox
+
+                createDetection = {
+                    "videoName": "Shooting Session 3",
+                    "videoLocation": "LAU Court",
+                    "userEmail": self.email,
+                    "videoSequenceName": self.path[0],
+                    "detectionType": class_name,
+                    "detectionTrackingId": str(track.track_id),
+                    "FrameNumber": frame_num,
+                    "fps": vid.get(cv2.CAP_PROP_POS_MSEC),
+                    "x_min": xmin,
+                    "y_min": ymin,
+                    "x_max": xmax,
+                    "y_max": ymax
+
+                }
+                response = requests.post(api_url + 'add-detection', json=createDetection)
+                print('----------------------', response.status_code)
 
                 if(vid.get(cv2.CAP_PROP_POS_MSEC) == 300.276):
                     print("its time my friend")

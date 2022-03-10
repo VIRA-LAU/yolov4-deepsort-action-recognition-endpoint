@@ -9,7 +9,7 @@ from os import walk
 import requests
 from object_tracker_endpoint import Process
 
-#saved_model_loaded = tf.saved_model.load('./checkpoints/yolov4-416', tags=[tag_constants.SERVING])
+saved_model_loaded = tf.saved_model.load('./checkpoints/yolov4-416', tags=[tag_constants.SERVING])
 
 app = FastAPI()
 
@@ -58,10 +58,10 @@ async def uploadVideo(email, file: UploadFile = File(...)):
 
     response = requests.post(api_url + 'create-video-sequence', json=createVideoSequence)
     if response.status_code != 409:
-        return {"filenames": file.filename, "response-status": response.status_code, "response-status": response.json()}
+        return {"filenames": file.filename, "response-status": response.status_code, "response-message": response.json()}
 
 
-    return {"filenames": file.filename, "response-status": response.status_code, "response-status": response.text}
+    return {"filenames": file.filename, "response-status": response.status_code, "response-message": response.text}
 
 
 @app.get("/api/v1/public/getVideo/{path}")
@@ -84,10 +84,10 @@ def getListOfReceivedVideos():
     return {"Received Videos": filenames}
 
 
-@app.get("/api/v1/public/process-video/{path}")
-def ProcessVideo(path):
-    result = Process(path, saved_model_loaded);
+@app.get("/api/v1/public/process-video/{sequenceName}/{email}")
+def ProcessVideo(sequenceName, email):
+    result = Process(sequenceName, saved_model_loaded, email);
     result.detect()
-    return {"Download From": "http://localhost:8000/getVideo/{}".format(path)}
+    return {"Download From": "http://localhost:8000/getVideo/{}".format(sequenceName)}
 
 
