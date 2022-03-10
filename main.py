@@ -53,7 +53,7 @@ async def uploadVideo(email, file: UploadFile = File(...)):
         "videoName": "Shooting Session 3",
         "videoLocation": "LAU COURT",
         "userEmail": email,
-        "videoSequenceName": file.filename[2]
+        "videoSequenceName": file.filename[0]
     }
 
     response = requests.post(api_url + 'create-video-sequence', json=createVideoSequence)
