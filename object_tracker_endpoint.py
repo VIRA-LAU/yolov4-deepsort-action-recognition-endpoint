@@ -140,6 +140,9 @@ class Process:
             # custom allowed classes (uncomment line below to customize tracker for only people)
             #allowed_classes = ['person']
 
+
+            print(pred_bbox)
+
             # loop through objects and use class index to get class name, allow only classes in allowed_classes list
             names = []
             deleted_indx = []
