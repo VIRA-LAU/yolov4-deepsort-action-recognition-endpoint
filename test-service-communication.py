@@ -48,15 +48,19 @@ print('--------------------------------------------------')
 
 createDetection = {
 
+  "videoName": "Shooting Session 3",
+  "videoLocation": "LAU Court",
+  "userEmail": "roland@example.com",
+  "videoSequenceName": "0",
   "detectionType": "string",
   "detectionTrackingId": "string",
   "actionOccurred": "string",
   "fps": 0,
-  "videoSequenceId": videoSequenceId,
   "x_min": 0,
   "y_min": 0,
   "x_max": 0,
   "y_max": 0
+
 }
 
 response = requests.post(api_url + 'add-detection', json=createDetection)
