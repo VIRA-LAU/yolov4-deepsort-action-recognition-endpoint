@@ -201,7 +201,6 @@ class Process:
                 color = colors[int(track.track_id) % len(colors)]
 
                 color = [i * 255 for i in color]
-                print(color)
                 cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
 
                 cv2.rectangle(frame, (int(bbox[0]), int(bbox[1]-30)), (int(bbox[0])+(len(class_name)+len(str(track.track_id)))*17, int(bbox[1])), color, -1)

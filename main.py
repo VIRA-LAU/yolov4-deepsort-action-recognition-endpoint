@@ -6,19 +6,24 @@ from starlette.responses import FileResponse
 import tensorflow as tf
 from tensorflow.python.saved_model import tag_constants
 from os import walk
-
+import requests
 from object_tracker_endpoint import Process
 
-saved_model_loaded = tf.saved_model.load('./checkpoints/yolov4-416', tags=[tag_constants.SERVING])
+#saved_model_loaded = tf.saved_model.load('./checkpoints/yolov4-416', tags=[tag_constants.SERVING])
 
 app = FastAPI()
 
 
 # uvicorn main:app --reload
+api_url = "http://localhost:5065/api/v1/"
+
 
 class ModelName(str, Enum):
     yolov4 = "yolov4"
 
+
+class Person(str, Enum):
+    email = ""
 
 @app.get("/api/v1/public")
 async def root():
@@ -26,7 +31,7 @@ async def root():
 
 
 @app.get("/api/v1/public/models/{model_name}")
-async def get_model(model_name: ModelName):
+async def get_model(model_name: ModelName ):
     isDarknetYOLOv4Available = os.path.isfile('./data/yolov4.weights')
     isTensorflowYOLOv4Available = os.path.isfile('./checkpoints/yolov4-416/saved_model.pb')
     if model_name == ModelName.yolov4:
@@ -39,12 +44,24 @@ async def get_model(model_name: ModelName):
     return {"model_name": model_name, "Darknet YOLOV4 Available": True, "Tensorflow YOLOV4 Available": True, }
 
 
-@app.post("/api/v1/public/upload-video")
-async def uploadVideo(file: UploadFile = File(...)):
+@app.post("/api/v1/public/upload-video/{email}")
+async def uploadVideo(email, file: UploadFile = File(...)):
     with open('./video_received/{}'.format(file.filename), 'wb') as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    return {"filenames": file.filename}
+    createVideoSequence = {
+        "videoName": "Shooting Session 3",
+        "videoLocation": "LAU COURT",
+        "userEmail": email,
+        "videoSequenceName": file.filename[2]
+    }
+
+    response = requests.post(api_url + 'create-video-sequence', json=createVideoSequence)
+    if response.status_code != 409:
+        return {"filenames": file.filename, "response-status": response.status_code, "response-status": response.json()}
+
+
+    return {"filenames": file.filename, "response-status": response.status_code, "response-status": response.text}
 
 
 @app.get("/api/v1/public/getVideo/{path}")
