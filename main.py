@@ -44,24 +44,26 @@ async def get_model(model_name: ModelName ):
     return {"model_name": model_name, "Darknet YOLOV4 Available": True, "Tensorflow YOLOV4 Available": True, }
 
 
-@app.post("/api/v1/public/upload-video/{email}")
-async def uploadVideo(email, file: UploadFile = File(...)):
+@app.post("/api/v1/public/upload-video")
+async def uploadVideo(file: UploadFile = File(...)):
     with open('./video_received/{}'.format(file.filename), 'wb') as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    createVideoSequence = {
-        "videoName": "Shooting Session 3",
-        "videoLocation": "LAU COURT",
-        "userEmail": email,
-        "videoSequenceName": file.filename[0]
-    }
+    with open('../../WebstormProjects/fyp-interface/src/assets/raw-video/{}'.format(file.filename), 'wb') as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    # createVideoSequence = {
+    #     "videoName": "Shooting Session 3",
+    #     "videoLocation": "LAU COURT",
+    #     "userEmail": email,
+    #     "videoSequenceName": file.filename[0]
+    # }
+    #
+    # response = requests.post(api_url + 'create-video-sequence', json=createVideoSequence)
+    # if response.status_code != 409:
+    #     return {"filenames": file.filename, "response-status": response.status_code, "response-message": response.json()}
 
-    response = requests.post(api_url + 'create-video-sequence', json=createVideoSequence)
-    if response.status_code != 409:
-        return {"filenames": file.filename, "response-status": response.status_code, "response-message": response.json()}
 
-
-    return {"filenames": file.filename, "response-status": response.status_code, "response-message": response.text}
+    return {"filenames": file.filename}
 
 
 @app.get("/api/v1/public/getVideo/{path}")
@@ -84,10 +86,17 @@ def getListOfReceivedVideos():
     return {"Received Videos": filenames}
 
 
-@app.get("/api/v1/public/process-video/{sequenceName}/{email}")
-def ProcessVideo(sequenceName, email):
-    result = Process(sequenceName, saved_model_loaded, email);
+@app.get("/api/v1/public/process-video/{videoName}")
+def ProcessVideo(videoName):
+    defaultRoverId = '2db9de23-b477-45ad-b268-25229cb93ef4'
+    request = {
+        "videoName": videoName,
+        "videoLocation": "LAU Court"
+    }
+    response = requests.post(api_url + 'videos/{}'.format(defaultRoverId), json=request)
+    videoId = response.json()['videoId']
+    result = Process(videoName, saved_model_loaded, videoId);
     result.detect()
-    return {"Download From": "http://localhost:8000/getVideo/{}".format(sequenceName)}
+    return 'Success'
 
 

@@ -30,10 +30,11 @@ api_url = "http://localhost:5065/api/v1/"
 
 class Process:
 
-    def __init__(self, path, model, email):
+    def __init__(self, path, model, videoId):
         self.path = path
         self.model = model
-        self.email = email
+        self.videoId = videoId
+
 
 
     def detect(self):
@@ -73,7 +74,7 @@ class Process:
         height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fps = int(vid.get(cv2.CAP_PROP_FPS))
         codec = cv2.VideoWriter_fourcc(*'MP4V')
-        output_path = './video_processed/{}'.format(self.path)
+        output_path = '../../WebstormProjects/fyp-interface/src/assets/detected-and-tracked-video/{}'.format(self.path)
         out = cv2.VideoWriter(output_path, codec, fps, (width, height))
 
         frame_num = 0
@@ -86,8 +87,17 @@ class Process:
             else:
                 print('Video has ended or failed, try a different video format!')
                 break
+
+
+            #### For Each Frame Send Request to the save the frame
+
+            CreateFrameResponse = requests.post(api_url + 'frames/{}'.format(self.videoId),json={})
+            print('frame Id Received From Stats Service: ', CreateFrameResponse.json()['frameId'])
+            print('---------------------')
             frame_num +=1
             print('Frame #: ', frame_num)
+            print('---------------------')
+
 
             frame_size = frame.shape[:2]
             image_data = cv2.resize(frame, (input_size, input_size))
@@ -195,27 +205,20 @@ class Process:
                 #print(bbox)
                 xmin, ymin, xmax, ymax = bbox
 
-                createDetection = {
-                    "videoName": "Shooting Session 3",
-                    "videoLocation": "LAU Court",
-                    "userEmail": self.email,
-                    "videoSequenceName": self.path[0],
+                detection = {
                     "detectionType": class_name,
                     "detectionTrackingId": str(track.track_id),
-                    "FrameNumber": frame_num,
-                    "fps": vid.get(cv2.CAP_PROP_POS_MSEC),
+                    "frameNumber": frame_num,
                     "x_min": xmin,
                     "y_min": ymin,
                     "x_max": xmax,
                     "y_max": ymax
 
                 }
-                response = requests.post(api_url + 'add-detection', json=createDetection)
+                response = requests.post(api_url + 'object-detections/{}'.format(CreateFrameResponse.json()['frameId']), json=detection)
                 print('----------------------', response.status_code)
 
-                if(vid.get(cv2.CAP_PROP_POS_MSEC) == 300.276):
-                    print("its time my friend")
-                    cv2.rectangle(frame, (600, 432), (1021, 900), (0, 255, 0), 2)
+
 
 
             # draw bbox on screen
