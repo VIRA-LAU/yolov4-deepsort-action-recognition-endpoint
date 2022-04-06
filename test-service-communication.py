@@ -7,7 +7,7 @@ import requests
 api_url = "http://localhost:5065/api/v1/"
 defaultRoverId = '2db9de23-b477-45ad-b268-25229cb93ef4'
 request = {
-  "videoName": 'Sdr',
+  "videoName": 'Sddr',
   "videoLocation": "LAU Court"
 }
 response = requests.post(api_url + 'videos/{}'.format(defaultRoverId), json=request)
@@ -33,4 +33,4 @@ detection = {
 }
 
 response = requests.post(api_url + 'object-detections/{}'.format(frameIdReceived), json=detection)
-print(response.text)
+print(response.json()['objectDetectionId'])

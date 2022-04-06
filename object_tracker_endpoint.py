@@ -74,7 +74,7 @@ class Process:
         height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fps = int(vid.get(cv2.CAP_PROP_FPS))
         codec = cv2.VideoWriter_fourcc(*'MP4V')
-        output_path = '../../WebstormProjects/fyp-interface/src/assets/detected-and-tracked-video/{}'.format(self.path)
+        output_path = '../../fyp-interface/src/assets/detected-and-tracked-video/{}'.format(self.path)
         out = cv2.VideoWriter(output_path, codec, fps, (width, height))
 
         frame_num = 0
@@ -150,7 +150,7 @@ class Process:
             allowed_classes = list(class_names.values())
 
             # custom allowed classes (uncomment line below to customize tracker for only people)
-            allowed_classes = ['person', 'madebasketball']
+            allowed_classes = ['person', 'basketball', 'madebasketball']
 
 
             #print(pred_bbox)
@@ -215,8 +215,10 @@ class Process:
                     "y_max": ymax
 
                 }
-                response = requests.post(api_url + 'object-detections/{}'.format(CreateFrameResponse.json()['frameId']), json=detection)
-                print('----------------------', response.status_code)
+
+                if(class_name != 'basketball'):
+                    response = requests.post(api_url + 'object-detections/{}'.format(CreateFrameResponse.json()['frameId']), json=detection)
+                    print('----------------------', response.json()['objectDetectionId'], '----- ',response.status_code)
 
 
 

@@ -49,8 +49,8 @@ async def uploadVideo(file: UploadFile = File(...)):
     with open('./video_received/{}'.format(file.filename), 'wb') as buffer:
         shutil.copyfileobj(file.file, buffer)
 
-    with open('../../WebstormProjects/fyp-interface/src/assets/raw-video/{}'.format(file.filename), 'wb') as buffer:
-        shutil.copyfileobj(file.file, buffer)
+    shutil.copy2('./video_received/{}'.format(file.filename), '../../fyp-interface/src/assets/raw-video/')
+
     # createVideoSequence = {
     #     "videoName": "Shooting Session 3",
     #     "videoLocation": "LAU COURT",
@@ -88,7 +88,7 @@ def getListOfReceivedVideos():
 
 @app.get("/api/v1/public/process-video/{videoName}")
 def ProcessVideo(videoName):
-    defaultRoverId = '2db9de23-b477-45ad-b268-25229cb93ef4'
+    defaultRoverId = '4213bb22-549e-4801-976d-7d5bc75b9a55'
     request = {
         "videoName": videoName,
         "videoLocation": "LAU Court"
