@@ -1,3 +1,4 @@
+import json
 import shutil
 from enum import Enum
 import os
@@ -9,7 +10,7 @@ from os import walk
 import requests
 from object_tracker_endpoint import Process
 
-saved_model_loaded = tf.saved_model.load('./checkpoints/yolov4-416', tags=[tag_constants.SERVING])
+#saved_model_loaded = tf.saved_model.load('./checkpoints/yolov4-416', tags=[tag_constants.SERVING])
 
 app = FastAPI()
 
@@ -76,7 +77,7 @@ def getVideo(path):
 
 @app.get("/api/v1/public/processed-videos")
 def getListOfProcessedVideos():
-    filenames = next(walk('video_processed'), (None, None, []))[2]
+    filenames = next(walk('../../fyp-interface/src/assets/detected-and-tracked-video/'), (None, None, []))[2]
     return {"Processed Videos": filenames}
 
 
@@ -86,16 +87,31 @@ def getListOfReceivedVideos():
     return {"Received Videos": filenames}
 
 
+
+@app.get("/api/v1/public/videos")
+def getListOfAllVideoStatus():
+    DetectedAndTracked = next(walk('../../fyp-interface/src/assets/detected-and-tracked-video/'), (None, None, []))[2]
+    RawVideos = next(walk('../../fyp-interface/src/assets/raw-video'), (None, None, []))[2]
+    Classified = next(walk('../../fyp-interface/src/assets/classified-video/'), (None, None, []))[2]
+
+    listOfVideos = {
+        "raw-videos": RawVideos,
+        "detected-and-tracked": DetectedAndTracked,
+        "classified": Classified
+    }
+
+    return listOfVideos
+
 @app.get("/api/v1/public/process-video/{videoName}")
 def ProcessVideo(videoName):
-    defaultRoverId = '4213bb22-549e-4801-976d-7d5bc75b9a55'
+    defaultRoverId = '2d1fca36-c8b2-443b-b449-10dd2a3ca5a4'
     request = {
         "videoName": videoName,
         "videoLocation": "LAU Court"
     }
     response = requests.post(api_url + 'videos/{}'.format(defaultRoverId), json=request)
     videoId = response.json()['videoId']
-    result = Process(videoName, saved_model_loaded, videoId);
+    result = Process(videoName, "saved_model_loaded", videoId);
     result.detect()
     return 'Success'
 
