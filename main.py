@@ -10,13 +10,13 @@ from os import walk
 import requests
 from object_tracker_endpoint import Process
 
-#saved_model_loaded = tf.saved_model.load('./checkpoints/yolov4-416', tags=[tag_constants.SERVING])
+saved_model_loaded = tf.saved_model.load('./checkpoints/yolov4-416', tags=[tag_constants.SERVING])
 
 app = FastAPI()
 
 
 # uvicorn main:app --reload
-api_url = "http://localhost:5065/api/v1/"
+api_url = "https://stats-service-fyp-vira.herokuapp.com/api/v1/"
 
 
 class ModelName(str, Enum):
@@ -30,6 +30,11 @@ class Person(str, Enum):
 async def root():
     return {"message": "Working Public Endpoint"}
 
+
+@app.get("/api/v1/get-videos")
+async def root():
+    response = requests.get(api_url + "videos")
+    return {"message": response.json()}
 
 @app.get("/api/v1/public/models/{model_name}")
 async def get_model(model_name: ModelName ):
@@ -111,7 +116,7 @@ def ProcessVideo(videoName):
     }
     response = requests.post(api_url + 'videos/{}'.format(defaultRoverId), json=request)
     videoId = response.json()['videoId']
-    result = Process(videoName, "saved_model_loaded", videoId);
+    result = Process(videoName, saved_model_loaded, videoId);
     result.detect()
     return 'Success'
 

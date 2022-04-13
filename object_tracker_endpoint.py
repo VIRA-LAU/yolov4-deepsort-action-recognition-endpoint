@@ -26,7 +26,7 @@ from deep_sort.detection import Detection
 from deep_sort.tracker import Tracker
 from tools import generate_detections as gdet
 
-api_url = "http://localhost:5065/api/v1/"
+api_url = "https://stats-service-fyp-vira.herokuapp.com/api/v1/"
 
 class Process:
 
