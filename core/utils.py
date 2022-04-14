@@ -189,8 +189,8 @@ def draw_bbox(image, bboxes, info = False, show_label=True, classes=read_class_n
 
                 cv2.putText(image, bbox_mess, (start_point[0], end_point[1] - 2), cv2.FONT_HERSHEY_SIMPLEX,
                             fontScale, (0, 0, 0), bbox_thick // 2, lineType=cv2.LINE_AA)
-                cv2.imshow('image', image)
-                cv2.waitKey(0)
+               # cv2.imshow('image', image)
+               # cv2.waitKey(0)
     return image
 
 def bbox_iou(bboxes1, bboxes2):

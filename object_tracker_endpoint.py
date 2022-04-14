@@ -136,9 +136,9 @@ class Process:
             allowed_classes = list(class_names.values())
             # custom allowed classes (uncomment line below to allow detections for only people)
             allowed_classes = ['person', 'basketball', 'madebasketball']
-            image = utils.draw_bbox(frame, pred_bbox, True)
+            frame = utils.draw_bbox(frame, pred_bbox, True)
             send_request(pred_bbox, allowed_classes, frame_num, CreateFrameResponse.json()['frameId'])
-            frame = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+            #frame = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
 
 
 
@@ -259,5 +259,6 @@ class Process:
             print("FPS: %.2f" % fps)
             result = np.asarray(frame)
             result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-
+            #cv2.imshow('image', result)
+            #cv2.waitKey(0)
             out.write(result)
