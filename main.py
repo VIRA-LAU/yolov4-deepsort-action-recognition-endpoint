@@ -88,7 +88,7 @@ def getListOfProcessedVideos():
 
 @app.get("/api/v1/public/received-videos")
 def getListOfReceivedVideos():
-    filenames = next(walk('video_received'), (None, None, []))[2]
+    filenames = next(walk('../../fyp-interface/src/assets/raw-video'), (None, None, []))[2]
     return {"Received Videos": filenames}
 
 

@@ -2,6 +2,8 @@ import os
 import requests
 
 # comment out below line to enable tensorflow logging outputs
+from core.functions import send_request
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import time
 import tensorflow as tf
@@ -60,7 +62,7 @@ class Process:
         XYSCALE = cfg.YOLO.XYSCALE
         NUM_CLASS = len(utils.read_class_names(cfg.YOLO.CLASSES))
         input_size = 416
-        video_path = './video_received/{}'.format(self.path)
+        video_path = '../../fyp-interface/src/assets/raw-video/{}'.format(self.path)
 
         infer = self.model.signatures['serving_default']
 
@@ -125,6 +127,23 @@ class Process:
                 score_threshold=0.50
             )
 
+            original_h, original_w, _ = frame.shape
+            bboxes = utils.format_boxes(boxes.numpy()[0], original_h, original_w)
+            pred_bbox = [bboxes, scores.numpy()[0], classes.numpy()[0], valid_detections.numpy()[0]]
+            # read in all class names from config
+            class_names = utils.read_class_names(cfg.YOLO.CLASSES)
+            # by default allow all classes in .names file
+            allowed_classes = list(class_names.values())
+            # custom allowed classes (uncomment line below to allow detections for only people)
+            allowed_classes = ['person', 'basketball', 'madebasketball']
+            image = utils.draw_bbox(frame, pred_bbox, True)
+            send_request(pred_bbox, allowed_classes, frame_num, CreateFrameResponse.json()['frameId'])
+            frame = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
+
+
+
+
             # convert data to numpy arrays and slice out unused elements
             num_objects = valid_detections.numpy()[0]
             bboxes = boxes.numpy()[0]
@@ -143,17 +162,13 @@ class Process:
             # store all predictions in one parameter for simplicity when calling functions
             pred_bbox = [bboxes, scores, classes, num_objects]
 
+
             # read in all class names from config
             class_names = utils.read_class_names(cfg.YOLO.CLASSES)
 
-            # by default allow all classes in .names file
-            allowed_classes = list(class_names.values())
-
-            # custom allowed classes (uncomment line below to customize tracker for only people)
-            allowed_classes = ['person', 'basketball', 'madebasketball']
 
 
-            #print(pred_bbox)
+
 
             # loop through objects and use class index to get class name, allow only classes in allowed_classes list
             names = []
@@ -216,25 +231,28 @@ class Process:
 
                 }
 
-                if(class_name != 'basketball'):
+                if(class_name == 'person'):
+                    print(detection)
                     response = requests.post(api_url + 'object-detections/{}'.format(CreateFrameResponse.json()['frameId']), json=detection)
                     print('----------------------', response.json()['objectDetectionId'], '----- ',response.status_code)
 
 
 
 
-            # draw bbox on screen
-                color = colors[int(track.track_id) % len(colors)]
+                 # draw bbox on screen
+                if class_name == "person":
+                    color = colors[int(track.track_id) % len(colors)]
 
-                color = [i * 255 for i in color]
-                cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
+                    color = [i * 255 for i in color]
+                    cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
 
-                cv2.rectangle(frame, (int(bbox[0]), int(bbox[1]-30)), (int(bbox[0])+(len(class_name)+len(str(track.track_id)))*17, int(bbox[1])), color, -1)
-                cv2.putText(frame, class_name + "-" + str(track.track_id),(int(bbox[0]), int(bbox[1]-10)),0, 0.75, (255,255,255),2)
+                    cv2.rectangle(frame, (int(bbox[0]), int(bbox[1]-30)), (int(bbox[0])+(len(class_name)+len(str(track.track_id)))*17, int(bbox[1])), color, -1)
+                    cv2.putText(frame, class_name + "-" + str(track.track_id),(int(bbox[0]), int(bbox[1]-10)),0, 0.75, (255,255,255),2)
 
-            # if enable info flag then print details about each track
+                    # if enable info flag then print details about each track
 
-                print("Tracker ID: {}, Class: {},  BBox Coords (xmin, ymin, xmax, ymax): {}".format(str(track.track_id), class_name, (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3]))))
+                    print("Tracker ID: {}, Class: {},  BBox Coords (xmin, ymin, xmax, ymax): {}".format(str(track.track_id), class_name, (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3]))))
+
 
             # calculate frames per second of running detections
             fps = 1.0 / (time.time() - start_time)
