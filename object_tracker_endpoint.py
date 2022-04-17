@@ -1,6 +1,6 @@
 import os
 import requests
-
+from paths import *
 # comment out below line to enable tensorflow logging outputs
 from core.functions import send_request
 
@@ -62,7 +62,7 @@ class Process:
         XYSCALE = cfg.YOLO.XYSCALE
         NUM_CLASS = len(utils.read_class_names(cfg.YOLO.CLASSES))
         input_size = 416
-        video_path = './video_received/{}'.format(self.path)
+        video_path = video_received_dir+'{}'.format(self.path)
 
         infer = self.model.signatures['serving_default']
 
@@ -76,7 +76,7 @@ class Process:
         height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fps = int(vid.get(cv2.CAP_PROP_FPS))
         codec = cv2.VideoWriter_fourcc(*'MP4V')
-        output_path = './video_processed/{}'.format(self.path)
+        output_path = video_detected_dir+'{}'.format(self.path)
         out = cv2.VideoWriter(output_path, codec, fps, (width, height))
 
         frame_num = 0

@@ -91,7 +91,7 @@ def main(_argv):
         print(*FLAGS.output_format)
         codec = cv2.VideoWriter_fourcc(*FLAGS.output_format)
 
-        out = cv2.VideoWriter('FLAGS.output', codec, fps, (width, height))
+        out = cv2.VideoWriter(FLAGS.output, codec, fps, (width, height))
 
     frame_num = 0
     # while video is running
@@ -248,7 +248,7 @@ def main(_argv):
         # if output flag is set, save video file
         if FLAGS.output:
             out.write(result)
-        if cv2.waitKey(0) & 0xFF == ord('q'): break
+        if cv2.waitKey(5) & 0xFF == ord('q'): break
     cv2.destroyAllWindows()
 
 if __name__ == '__main__':
