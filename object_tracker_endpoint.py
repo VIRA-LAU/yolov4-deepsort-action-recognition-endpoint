@@ -75,7 +75,7 @@ class Process:
         width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fps = int(vid.get(cv2.CAP_PROP_FPS))
-        codec = cv2.VideoWriter_fourcc(*'MP4V')
+        codec = cv2.VideoWriter_fourcc(*'H264')
         output_path = video_detected_dir+'{}'.format(self.path)
         out = cv2.VideoWriter(output_path, codec, fps, (width, height))
 
