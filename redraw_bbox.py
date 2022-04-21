@@ -1,9 +1,13 @@
 import cv2
-from paths import video_received_dir, video_assigned_dir
+import requests
+
+from paths import video_received_dir, video_assigned_dir, api_url
 
 
 def draw(video, bboxes, name):
-    vid = cv2.VideoCapture(video_received_dir + video)
+    response = requests.get(api_url + 'videos/{}'.format(video))
+    video_url = response.json()['videoRawUrl']
+    vid = cv2.VideoCapture(video_url)
     width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
     height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
     fps = int(vid.get(cv2.CAP_PROP_FPS))

@@ -16,7 +16,10 @@ import tensorflow as tf
 from tensorflow.python.saved_model import tag_constants
 from os import walk
 import requests
+
+from assigning_names import assign_names
 from object_tracker_endpoint import Process
+from paths import video_received_dir, api_url, video_detected_dir, video_classified_dir
 
 timeout = 500
 saved_model_loaded = tf.saved_model.load('./checkpoints/yolov4-416', tags=[tag_constants.SERVING])
@@ -29,7 +32,6 @@ bucket = storage.bucket()
 app = FastAPI()
 
 # uvicorn main:app --reload
-api_url = "https://stats-service-fyp-vira.herokuapp.com/api/v1/"
 
 
 class ModelName(str, Enum):
@@ -159,6 +161,86 @@ async def ProcessVideo(videoName):
     requests.put(api_url + 'videos/update/{}'.format(videoId), json=detected_url)
 
     return {'url': blob.public_url}
+
+
+@app.get("/api/v1/public/getVideoUrl/{name}")
+def getVideoUrl(name):
+    try:
+        video = requests.get(api_url + 'videos/{}'.format(name)).json()
+        print(video['videoRawUrl'])
+        return {'rawUrl': video['videoRawUrl']}
+    except:
+        return {"error": "File not found!"}
+
+
+@app.get("/api/v1/public/processed-videosUrl")
+def getListOfProcessedVideosUrl():
+    videos = requests.get(api_url + 'videos').json()
+    to_return = []
+    for video in videos:
+        if video['videoDetectUrl']:
+            to_return.append(video['videoDetectUrl'])
+    return {'processedVideos': to_return}
+
+
+@app.get("/api/v1/public/received-videosUrl")
+def getListOfReceivedVideosUrl():
+    videos = requests.get(api_url + 'videos').json()
+    to_return = []
+    for video in videos:
+        to_return.append(video['videoRawUrl'])
+    return {'videosReceived': to_return}
+
+
+@app.get("/api/v1/public/videosUrl")
+def getListOfAllVideoStatusUrl():
+    videos = requests.get(api_url + 'videos').json()
+    DetectedAndTracked = []
+    RawVideos = []
+    Classified = []
+    for video in videos:
+        RawVideos.append(video['videoRawUrl'])
+        if video['videoDetectUrl']:
+            DetectedAndTracked.append(video['videoDetectUrl'])
+        if video['videoClassifyUrl']:
+            Classified.append(video['videoClassifyUrl'])
+    listOfVideos = {
+        "raw-videos": RawVideos,
+        "detected-and-tracked": DetectedAndTracked,
+        "classified": Classified
+    }
+    return listOfVideos
+
+
+@app.get("/api/v1/public/process-videoUrl/{videoName}")
+async def ProcessVideoUrl(videoName):
+    try:
+        response = requests.get(api_url + 'videos/{}'.format(videoName))
+    except:
+        return {"error": "File not found!"}
+    videoId = response.json()['videoId']
+    video_url = response.json()['videoRawUrl']
+    result = Process(video_url, saved_model_loaded, videoName, videoId);
+    result.detect()
+    print('Detected')
+
+    blob = bucket.blob('processed_videos/' + videoName)
+    blob.upload_from_filename(video_detected_dir + videoName, timeout=timeout)
+    blob.make_public()
+    print("Firebase URL:", blob.public_url)
+
+    detected_url = {
+        "videoDetectUrl": blob.public_url
+    }
+    requests.put(api_url + 'videos/update/{}'.format(videoId), json=detected_url)
+
+    return {'url': blob.public_url}
+
+
+@app.get("/api/v1/public/assign_names_to_videos")
+def assign_names_to_videos():
+    assigner = assign_names(bucket)
+    assigner.assign()
 
 
 if __name__ == '__main__':

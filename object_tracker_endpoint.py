@@ -1,8 +1,8 @@
 import os
 import requests
-from paths import *
 # comment out below line to enable tensorflow logging outputs
 from core.functions import send_request
+from paths import video_detected_dir, api_url
 
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import time
@@ -28,11 +28,13 @@ from deep_sort.detection import Detection
 from deep_sort.tracker import Tracker
 from tools import generate_detections as gdet
 
-api_url = "https://stats-service-fyp-vira.herokuapp.com/api/v1/"
+
 
 class Process:
 
     def __init__(self, path, model, videoId):
+        response = requests.get(api_url + 'videos/{}'.format(path))
+        self.video_url = response.json()['videoRawUrl']
         self.path = path
         self.model = model
         self.videoId = videoId
@@ -52,7 +54,6 @@ class Process:
         # initialize tracker
         tracker = Tracker(metric)
 
-
         # load configuration for object detector
         config = ConfigProto()
         config.gpu_options.allow_growth = True
@@ -62,15 +63,10 @@ class Process:
         XYSCALE = cfg.YOLO.XYSCALE
         NUM_CLASS = len(utils.read_class_names(cfg.YOLO.CLASSES))
         input_size = 416
-        video_path = video_received_dir+'{}'.format(self.path)
 
         infer = self.model.signatures['serving_default']
 
-        try:
-            vid = cv2.VideoCapture(int(video_path))
-        except:
-            vid = cv2.VideoCapture(video_path)
-
+        vid = cv2.VideoCapture(self.video_url)
         out = None
         width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
