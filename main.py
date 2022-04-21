@@ -219,8 +219,7 @@ async def ProcessVideoUrl(videoName):
     except:
         return {"error": "File not found!"}
     videoId = response.json()['videoId']
-    video_url = response.json()['videoRawUrl']
-    result = Process(video_url, saved_model_loaded, videoName, videoId);
+    result = Process(videoName, saved_model_loaded, videoId);
     result.detect()
     print('Detected')
 
