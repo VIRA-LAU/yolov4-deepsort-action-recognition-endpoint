@@ -1,5 +1,7 @@
 import subprocess
 
+from starlette.middleware.cors import CORSMiddleware
+
 from paths import *
 
 import json
@@ -30,6 +32,19 @@ firebase_admin.initialize_app(cred, {'storageBucket': 'fyp-interface.appspot.com
 bucket = storage.bucket()
 
 app = FastAPI()
+
+origins = [
+    "http://localhost",
+    "http://localhost:3000",
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # uvicorn main:app --reload
 
