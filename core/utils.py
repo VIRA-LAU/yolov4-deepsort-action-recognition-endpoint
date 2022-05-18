@@ -155,22 +155,42 @@ def draw_bbox(image, bboxes, info = False, show_label=True, classes=read_class_n
         score = out_scores[i]
         class_ind = int(out_classes[i])
         class_name = classes[class_ind]
-        bbox_color = colors[class_ind]
-        bbox_thick = int(0.6 * (image_h + image_w) / 600)
-        c1, c2 = (x, y), (x + w, y + h)
-        cv2.rectangle(image, c1, c2, bbox_color, bbox_thick)
+        print(class_name, out_boxes[i])
 
-        if info:
-            print("Object found: {}, Confidence: {:.2f}, BBox Coords (xmin, ymin, width, height): {}, {}, {}, {} ".format(class_name, score, x, y, w, h))
+        if class_name != "person":
+            bbox_color = colors[class_ind]
+            bbox_thick = int(0.6 * (image_h + image_w) / 600)
+            #c1, c2 = (x, y), (x + w, y + h)
 
-        if show_label:
-            bbox_mess = '%s: %.2f' % (class_name, score)
-            t_size = cv2.getTextSize(bbox_mess, 0, fontScale, thickness=bbox_thick // 2)[0]
-            c3 = (c1[0] + t_size[0], c1[1] - t_size[1] - 3)
-            cv2.rectangle(image, c1, (np.float32(c3[0]), np.float32(c3[1])), bbox_color, -1) #filled
 
-            cv2.putText(image, bbox_mess, (c1[0], np.float32(c1[1] - 2)), cv2.FONT_HERSHEY_SIMPLEX,
-                        fontScale, (0, 0, 0), bbox_thick // 2, lineType=cv2.LINE_AA)
+            start_point = (int(x), int(y))
+
+            end_point = (int(x+w), int(y+h))
+
+
+
+
+
+            if info:
+                print("Object found: {}, Confidence: {:.2f}, BBox Coords (xmin, ymin, width, height): {}, {}, {}, {} ".format(class_name, score, x, y, w, h))
+
+            if show_label:
+                bbox_mess = '%s: %.2f' % (class_name, score)
+                t_size = cv2.getTextSize(bbox_mess, 0, fontScale, thickness=bbox_thick // 2)[0]
+
+                #end_point_with_text = int(start_point[0] + t_size[0]), int (start_point[1] - t_size[1] - 3)
+                image = cv2.rectangle(image, start_point, end_point, bbox_color, 2)
+
+
+
+                #cv2.rectangle(image, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
+
+               # cv2.rectangle(image, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), bbox_color, 2)
+
+                cv2.putText(image, bbox_mess, (start_point[0], end_point[1] - 2), cv2.FONT_HERSHEY_SIMPLEX,
+                            fontScale, (0, 0, 0), bbox_thick // 2, lineType=cv2.LINE_AA)
+               # cv2.imshow('image', image)
+               # cv2.waitKey(0)
     return image
 
 def bbox_iou(bboxes1, bboxes2):

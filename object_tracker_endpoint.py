@@ -1,6 +1,9 @@
 import os
-
+import requests
 # comment out below line to enable tensorflow logging outputs
+from core.functions import send_request
+from paths import video_detected_dir, api_url
+
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import time
 import tensorflow as tf
@@ -29,9 +32,13 @@ from tools import generate_detections as gdet
 
 class Process:
 
-    def __init__(self, path, model):
+    def __init__(self, path, model, videoId):
+        response = requests.get(api_url + 'videos/{}'.format(path))
+        self.video_url = response.json()['videoRawUrl']
         self.path = path
         self.model = model
+        self.videoId = videoId
+
 
 
     def detect(self):
@@ -47,7 +54,6 @@ class Process:
         # initialize tracker
         tracker = Tracker(metric)
 
-
         # load configuration for object detector
         config = ConfigProto()
         config.gpu_options.allow_growth = True
@@ -57,21 +63,16 @@ class Process:
         XYSCALE = cfg.YOLO.XYSCALE
         NUM_CLASS = len(utils.read_class_names(cfg.YOLO.CLASSES))
         input_size = 416
-        video_path = './video_received/{}'.format(self.path)
 
         infer = self.model.signatures['serving_default']
 
-        try:
-            vid = cv2.VideoCapture(int(video_path))
-        except:
-            vid = cv2.VideoCapture(video_path)
-
+        vid = cv2.VideoCapture(self.video_url)
         out = None
         width = int(vid.get(cv2.CAP_PROP_FRAME_WIDTH))
         height = int(vid.get(cv2.CAP_PROP_FRAME_HEIGHT))
         fps = int(vid.get(cv2.CAP_PROP_FPS))
-        codec = cv2.VideoWriter_fourcc(*'MP4V')
-        output_path = './video_processed/{}'.format(self.path)
+        codec = cv2.VideoWriter_fourcc(*'H264')
+        output_path = video_detected_dir+'{}'.format(self.path)
         out = cv2.VideoWriter(output_path, codec, fps, (width, height))
 
         frame_num = 0
@@ -84,8 +85,17 @@ class Process:
             else:
                 print('Video has ended or failed, try a different video format!')
                 break
+
+
+            #### For Each Frame Send Request to the save the frame
+
+            CreateFrameResponse = requests.post(api_url + 'frames/{}'.format(self.videoId),json={})
+            print('frame Id Received From Stats Service: ', CreateFrameResponse.json()['frameId'])
+            print('---------------------')
             frame_num +=1
             print('Frame #: ', frame_num)
+            print('---------------------')
+
 
             frame_size = frame.shape[:2]
             image_data = cv2.resize(frame, (input_size, input_size))
@@ -113,6 +123,23 @@ class Process:
                 score_threshold=0.50
             )
 
+            original_h, original_w, _ = frame.shape
+            bboxes = utils.format_boxes(boxes.numpy()[0], original_h, original_w)
+            pred_bbox = [bboxes, scores.numpy()[0], classes.numpy()[0], valid_detections.numpy()[0]]
+            # read in all class names from config
+            class_names = utils.read_class_names(cfg.YOLO.CLASSES)
+            # by default allow all classes in .names file
+            allowed_classes = list(class_names.values())
+            # custom allowed classes (uncomment line below to allow detections for only people)
+            allowed_classes = ['person', 'basketball', 'madebasketball']
+            frame = utils.draw_bbox(frame, pred_bbox, True)
+            send_request(pred_bbox, allowed_classes, frame_num, CreateFrameResponse.json()['frameId'])
+            #frame = cv2.cvtColor(image, cv2.COLOR_RGB2BGR)
+
+
+
+
+
             # convert data to numpy arrays and slice out unused elements
             num_objects = valid_detections.numpy()[0]
             bboxes = boxes.numpy()[0]
@@ -131,14 +158,13 @@ class Process:
             # store all predictions in one parameter for simplicity when calling functions
             pred_bbox = [bboxes, scores, classes, num_objects]
 
+
             # read in all class names from config
             class_names = utils.read_class_names(cfg.YOLO.CLASSES)
 
-            # by default allow all classes in .names file
-            allowed_classes = list(class_names.values())
 
-            # custom allowed classes (uncomment line below to customize tracker for only people)
-            #allowed_classes = ['person']
+
+
 
             # loop through objects and use class index to get class name, allow only classes in allowed_classes list
             names = []
@@ -184,34 +210,51 @@ class Process:
                 bbox = track.to_tlbr()
                 class_name = track.get_class()
 
-                print(str(vid.get(cv2.CAP_PROP_POS_MSEC)))
-                print(class_name)
-                print(track.track_id)
-                print(bbox)
+                #print(str(vid.get(cv2.CAP_PROP_POS_MSEC)))
+                #print(class_name)
+                #print(track.track_id)
+                #print(bbox)
+                xmin, ymin, xmax, ymax = bbox
 
-                if(vid.get(cv2.CAP_PROP_POS_MSEC) == 300.276):
-                    print("its time my friend")
-                    cv2.rectangle(frame, (600, 432), (1021, 900), (0, 255, 0), 2)
+                detection = {
+                    "detectionType": class_name,
+                    "detectionTrackingId": str(track.track_id),
+                    "frameNumber": frame_num,
+                    "x_min": xmin,
+                    "y_min": ymin,
+                    "x_max": xmax,
+                    "y_max": ymax
+
+                }
+
+                if(class_name == 'person'):
+                    print(detection)
+                    response = requests.post(api_url + 'object-detections/{}'.format(CreateFrameResponse.json()['frameId']), json=detection)
+                    print('----------------------', response.json()['objectDetectionId'], '----- ',response.status_code)
 
 
-            # draw bbox on screen
-                color = colors[int(track.track_id) % len(colors)]
 
-                color = [i * 255 for i in color]
-                print(color)
-                cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
 
-                cv2.rectangle(frame, (int(bbox[0]), int(bbox[1]-30)), (int(bbox[0])+(len(class_name)+len(str(track.track_id)))*17, int(bbox[1])), color, -1)
-                cv2.putText(frame, class_name + "-" + str(track.track_id),(int(bbox[0]), int(bbox[1]-10)),0, 0.75, (255,255,255),2)
+                 # draw bbox on screen
+                if class_name == "person":
+                    color = colors[int(track.track_id) % len(colors)]
 
-            # if enable info flag then print details about each track
+                    color = [i * 255 for i in color]
+                    cv2.rectangle(frame, (int(bbox[0]), int(bbox[1])), (int(bbox[2]), int(bbox[3])), color, 2)
 
-                print("Tracker ID: {}, Class: {},  BBox Coords (xmin, ymin, xmax, ymax): {}".format(str(track.track_id), class_name, (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3]))))
+                    cv2.rectangle(frame, (int(bbox[0]), int(bbox[1]-30)), (int(bbox[0])+(len(class_name)+len(str(track.track_id)))*17, int(bbox[1])), color, -1)
+                    cv2.putText(frame, class_name + "-" + str(track.track_id),(int(bbox[0]), int(bbox[1]-10)),0, 0.75, (255,255,255),2)
+
+                    # if enable info flag then print details about each track
+
+                    print("Tracker ID: {}, Class: {},  BBox Coords (xmin, ymin, xmax, ymax): {}".format(str(track.track_id), class_name, (int(bbox[0]), int(bbox[1]), int(bbox[2]), int(bbox[3]))))
+
 
             # calculate frames per second of running detections
             fps = 1.0 / (time.time() - start_time)
             print("FPS: %.2f" % fps)
             result = np.asarray(frame)
             result = cv2.cvtColor(frame, cv2.COLOR_RGB2BGR)
-
+            #cv2.imshow('image', result)
+            #cv2.waitKey(0)
             out.write(result)
